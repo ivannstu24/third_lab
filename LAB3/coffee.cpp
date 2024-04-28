@@ -1,6 +1,7 @@
 #include <cmath>
 #include <cstddef>
 #include <iostream>
+#include <iomanip> // For setw
 #include <numeric>
 #include <utility>
 #include <vector>
@@ -38,14 +39,17 @@ int main() {
     auto [slope, intercept] = linearApproximation(times, temperatures);
     double correlation = correlationCoefficient(times, temperatures);
 
-    // Output results
-    cout << "The slope of the linear approximation (a): " << slope << endl;
-    cout << "The intercept of the linear approximation (b): " << intercept << endl;
-    cout << "The correlation coefficient (r): " << correlation << endl;
-
-    // Output temperatures over time
+    // Output results in a tabular format
+    cout << "-------------------------------------------" << endl;
+    cout << "| Time (s) | Temperature (C)" << setw(10) << "|" << endl;
+    cout << "-------------------------------------------" << endl;
     for (size_t i = 0; i < temperatures.size(); i++)
-        cout << "Time - " << times[i] << "s: Temperature - " << temperatures[i] << " C" << endl;
+        cout << "| " << setw(8) << times[i] << " | " << setw(14) << temperatures[i] << " |" << endl;
+    cout << "-------------------------------------------" << endl;
+    cout << "| Slope (a)        | " << setw(14) << slope << " |" << endl;
+    cout << "| Intercept (b)    | " << setw(14) << intercept << " |" << endl;
+    cout << "| Correlation (r)  | " << setw(14) << correlation << " |" << endl;
+    cout << "-------------------------------------------" << endl;
 
     return 0;
 }
