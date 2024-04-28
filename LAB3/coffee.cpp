@@ -1,109 +1,86 @@
-#include <iostream>
-#include <vector>
 #include <cmath>
-#include <iomanip>
+#include <cstddef>
+#include <iostream>
+#include <numeric>
+#include <utility>
+#include <vector>
 
-// Функция для решения дифференциального уравнения методом Эйлера
-void coffeeTemperature(double initialTemperature, double ambientTemperature, double coolingRate, double timeStep, int steps, std::vector<double>& time, std::vector<double>& temperature) {
-    time.push_back(0); // Начальное время
-    temperature.push_back(initialTemperature); // Начальная температура кофе
+using namespace std;
 
-    for (int i = 1; i <= steps; ++i) {
-        double dTdt = -coolingRate * (temperature[i - 1] - ambientTemperature); // Вычисление производной температуры
-        temperature.push_back(temperature[i - 1] + dTdt * timeStep); // Вычисление новой температуры
-        time.push_back(time[i - 1] + timeStep); // Вычисление нового времени
-    }
-}
-
-// Функция для вычисления коэффициентов аппроксимирующей прямой
-void linearApproximation(const std::vector<double>& time, const std::vector<double>& temperature, double& slope, double& intercept) {
-    double sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
-    int n = time.size();
-
-    for (int i = 0; i < n; ++i) {
-        sumX += time[i];
-        sumY += temperature[i];
-        sumXY += time[i] * temperature[i];
-        sumX2 += time[i] * time[i];
-    }
-
-    double numerator = n * sumXY - sumX * sumY;
-    double denominator = n * sumX2 - sumX * sumX;
-
-    slope = numerator / denominator;
-    intercept = (sumY - slope * sumX) / n;
-}
-
-// Функция для вычисления коэффициента корреляции
-double correlation(const std::vector<double>& time, const std::vector<double>& temperature) {
-    double sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0, sumY2 = 0;
-    int n = time.size();
-
-    for (int i = 0; i < n; ++i) {
-        sumX += time[i];
-        sumY += temperature[i];
-        sumXY += time[i] * temperature[i];
-        sumX2 += time[i] * time[i];
-        sumY2 += temperature[i] * temperature[i];
-    }
-
-    double meanX = sumX / n;
-    double meanY = sumY / n;
-    double numerator = 0, denominatorX = 0, denominatorY = 0;
-
-    for (int i = 0; i < n; ++i) {
-        numerator += (time[i] - meanX) * (temperature[i] - meanY);
-        denominatorX += (time[i] - meanX) * (time[i] - meanX);
-        denominatorY += (temperature[i] - meanY) * (temperature[i] - meanY);
-    }
-
-    double denominator = sqrt(denominatorX * denominatorY);
-
-    if (denominator == 0) {
-        return 0; // Если знаменатель равен нулю, корреляция не определена
-    }
-
-    return numerator / denominator;
-}
+// Function prototypes
+vector<double> calculateTemperature(int initialTemp, int finalTemp, float rate, int duration);
+pair<double, double> linearApproximation(vector<int> x, vector<double> y);
+double correlationCoefficient(vector<int> x, vector<double> y);
 
 int main() {
-    double initialTemperature, ambientTemperature, coolingRate, timeStep;
-    int steps;
-    std::vector<double> time, temperature;
+    // User input for parameters
+    int initialTemp, finalTemp, duration;
+    float rate;
 
-    // Ввод необходимых параметров
-    std::cout << "Введите начальную температуру кофе: ";
-    std::cin >> initialTemperature;
-    std::cout << "Введите температуру окружающей среды: ";
-    std::cin >> ambientTemperature;
-    std::cout << "Введите коэффициент остывания: ";
-    std::cin >> coolingRate;
-    std::cout << "Введите шаг времени: ";
-    std::cin >> timeStep;
-    std::cout << "Введите количество шагов: ";
-    std::cin >> steps;
+    cout << "Enter initial temperature (T): ";
+    cin >> initialTemp;
+    cout << "Enter final temperature (Ts): ";
+    cin >> finalTemp;
+    cout << "Enter rate of change (r): ";
+    cin >> rate;
+    cout << "Enter duration (time): ";
+    cin >> duration;
 
-    // Решение дифференциального уравнения
-    coffeeTemperature(initialTemperature, ambientTemperature, coolingRate, timeStep, steps, time, temperature);
+    // Calculate temperatures
+    vector<double> temperatures = calculateTemperature(initialTemp, finalTemp, rate, duration);
 
-    // Аппроксимация прямой
-    double slope, intercept;
-    linearApproximation(time, temperature, slope, intercept);
+    // Generate time points
+    vector<int> times = {};
+    for (int i = 0; i <= duration; i++)
+        times.push_back(i);
 
-    // Вычисление коэффициента корреляции
-    double correlationCoefficient = correlation(time, temperature);
+    // Perform linear approximation
+    auto [slope, intercept] = linearApproximation(times, temperatures);
+    double correlation = correlationCoefficient(times, temperatures);
 
-    // Вывод результатов
-    std::cout << "Коэффициенты аппроксимирующей прямой: a = " << slope << ", b = " << intercept << std::endl;
-    std::cout << "Коэффициент корреляции: " << correlationCoefficient << std::endl;
+    // Output results
+    cout << "The slope of the linear approximation (a): " << slope << endl;
+    cout << "The intercept of the linear approximation (b): " << intercept << endl;
+    cout << "The correlation coefficient (r): " << correlation << endl;
 
-    // Вывод таблицы значений остывания кофе с корреляцией
-    std::cout << std::setw(10) << "Время (s)" << std::setw(15) << "Температура (°C)" << std::setw(15) << "Аппроксимация" << std::endl;
-    for (size_t i = 0; i < time.size(); ++i) {
-        double approximation = slope * time[i] + intercept; // Вычисление значения аппроксимации
-        std::cout << std::fixed << std::setprecision(2) << std::setw(10) << time[i]
-                  << std::setw(15) << temperature[i] << std::setw(15) << approximation << std::endl;
-    }
+    // Output temperatures over time
+    for (size_t i = 0; i < temperatures.size(); i++)
+        cout << "Time - " << times[i] << "s: Temperature - " << temperatures[i] << " C" << endl;
 
     return 0;
+}
+
+// Function to calculate temperatures over time
+vector<double> calculateTemperature(int initialTemp, int finalTemp, float rate, int duration) {
+    vector<double> temperatures = {};
+    for (int i = 0; i <= duration; i++)
+        temperatures.push_back(finalTemp + (initialTemp - finalTemp) * exp(-rate * i));
+    return temperatures;
+}
+
+// Function for linear approximation
+pair<double, double> linearApproximation(vector<int> x, vector<double> y) {
+    size_t n = x.size();
+    double xySum = inner_product(x.begin(), x.end(), y.begin(), 0);
+    double xSum = accumulate(x.begin(), x.end(), 0);
+    double ySum = accumulate(y.begin(), y.end(), 0);
+    double xSquaredSum = inner_product(x.begin(), x.end(), x.begin(), 0);
+    double slope = (n * xySum - xSum * ySum) / (n * xSquaredSum - pow(xSum, 2));
+    double intercept = (ySum - slope * xSum) / n;
+    return {slope, intercept};
+}
+
+// Function to calculate correlation coefficient
+double correlationCoefficient(vector<int> x, vector<double> y) {
+    double meanX = accumulate(x.begin(), x.end(), 0.) / x.size();
+    double meanY = accumulate(y.begin(), y.end(), 0.) / y.size();
+    double covariance = 0.;
+    double deviationX = 0., deviationY = 0.;
+    for (size_t i = 0; i < x.size(); i++) {
+        covariance += (x[i] - meanX) * (y[i] - meanY);
+        deviationX += pow(x[i] - meanX, 2);
+        deviationY += pow(y[i] - meanY, 2);
+    }
+    double normalization = pow(deviationX * deviationY, 0.5);
+    return covariance / normalization;
 }
