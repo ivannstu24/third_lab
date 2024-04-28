@@ -1,79 +1,61 @@
-import numpy as np
+import math
 
-# Функция для решения дифференциального уравнения методом Эйлера
-def coffee_temperature(initial_temperature, ambient_temperature, cooling_rate, time_step, steps):
-    time = [0]  # Начальное время
-    temperature = [initial_temperature]  # Начальная температура кофе
+# Function to calculate temperatures over time
+def calculate_temperature(initial_temp, final_temp, rate, duration):
+    temperatures = []
+    for i in range(duration + 1):
+        temperatures.append(final_temp + (initial_temp - final_temp) * math.exp(-rate * i))
+    return temperatures
 
-    for i in range(1, steps + 1):
-        dTdt = -cooling_rate * (temperature[i - 1] - ambient_temperature)  # Вычисление производной температуры
-        temperature.append(temperature[i - 1] + dTdt * time_step)  # Вычисление новой температуры
-        time.append(time[i - 1] + time_step)  # Вычисление нового времени
-
-    return time, temperature
-
-# Функция для вычисления коэффициентов аппроксимирующей прямой
-def linear_approximation(time, temperature):
-    X = np.array(time)
-    Y = np.array(temperature)
-    n = len(time)
-
-    sumX = np.sum(X)
-    sumY = np.sum(Y)
-    sumXY = np.sum(X * Y)
-    sumX2 = np.sum(X ** 2)
-
-    numerator = n * sumXY - sumX * sumY
-    denominator = n * sumX2 - sumX ** 2
-
-    slope = numerator / denominator
-    intercept = (sumY - slope * sumX) / n
-
+# Function for linear approximation
+def linear_approximation(x, y):
+    n = len(x)
+    xy_sum = sum(xi * yi for xi, yi in zip(x, y))
+    x_sum = sum(x)
+    y_sum = sum(y)
+    x_squared_sum = sum(xi ** 2 for xi in x)
+    slope = (n * xy_sum - x_sum * y_sum) / (n * x_squared_sum - x_sum ** 2)
+    intercept = (y_sum - slope * x_sum) / n
     return slope, intercept
 
-# Функция для вычисления коэффициента корреляции
-def correlation(time, temperature):
-    X = np.array(time)
-    Y = np.array(temperature)
-    n = len(time)
+# Function to calculate correlation coefficient
+def correlation_coefficient(x, y):
+    mean_x = sum(x) / len(x)
+    mean_y = sum(y) / len(y)
+    covariance = sum((xi - mean_x) * (yi - mean_y) for xi, yi in zip(x, y))
+    deviation_x = sum((xi - mean_x) ** 2 for xi in x)
+    deviation_y = sum((yi - mean_y) ** 2 for yi in y)
+    normalization = math.sqrt(deviation_x * deviation_y)
+    return covariance / normalization
 
-    meanX = np.mean(X)
-    meanY = np.mean(Y)
+def main():
+    # User input for parameters
+    initial_temp = int(input("Enter initial temperature (T): "))
+    final_temp = int(input("Enter final temperature (Ts): "))
+    rate = float(input("Enter rate of change (r): "))
+    duration = int(input("Enter duration (time): "))
 
-    numerator = np.sum((X - meanX) * (Y - meanY))
-    denominatorX = np.sum((X - meanX) ** 2)
-    denominatorY = np.sum((Y - meanY) ** 2)
+    # Calculate temperatures
+    temperatures = calculate_temperature(initial_temp, final_temp, rate, duration)
 
-    denominator = np.sqrt(denominatorX * denominatorY)
+    # Generate time points
+    times = list(range(duration + 1))
 
-    if denominator == 0:
-        return 0  # Если знаменатель равен нулю, корреляция не определена
+    # Perform linear approximation
+    slope, intercept = linear_approximation(times, temperatures)
+    correlation = correlation_coefficient(times, temperatures)
 
-    return numerator / denominator
+    # Output results in a tabular format
+    print("-------------------------------------------")
+    print("| Time (s) | Temperature (C) |")
+    print("-------------------------------------------")
+    for time, temp in zip(times, temperatures):
+        print(f"| {time:^9} | {temp:^15.2f} |")
+    print("-------------------------------------------")
+    print(f"| Slope (a)        | {slope:^15.2f} |")
+    print(f"| Intercept (b)    | {intercept:^15.2f} |")
+    print(f"| Correlation (r)  | {correlation:^15.2f} |")
+    print("-------------------------------------------")
 
-# Ввод необходимых параметров
-initial_temperature = float(input("Введите начальную температуру кофе: "))
-ambient_temperature = float(input("Введите температуру окружающей среды: "))
-cooling_rate = float(input("Введите коэффициент остывания: "))
-time_step = float(input("Введите шаг времени: "))
-steps = int(input("Введите количество шагов: "))
-
-# Решение дифференциального уравнения
-time, temperature = coffee_temperature(initial_temperature, ambient_temperature, cooling_rate, time_step, steps)
-
-# Аппроксимация прямой
-slope, intercept = linear_approximation(time, temperature)
-
-# Вычисление коэффициента корреляции
-correlation_coefficient = correlation(time, temperature)
-
-# Вывод результатов
-print("Коэффициенты аппроксимирующей прямой: a =", slope, ", b =", intercept)
-print("Коэффициент корреляции:", correlation_coefficient)
-
-# Вывод таблицы значений остывания кофе с корреляцией
-print("{:<10} {:>15} {:>15}".format("Время (s)", "Температура (°C)", "Аппроксимация"))
-
-for i in range(len(time)):
-    approximation = slope * time[i] + intercept  # Вычисление значения аппроксимации
-    print("{:<10.2f} {:>15.2f} {:>15.2f}".format(time[i], temperature[i], approximation))
+if __name__ == "__main__":
+    main()
